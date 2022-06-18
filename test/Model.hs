@@ -24,7 +24,7 @@ module Model
   , validatedChainToList
   ) where
 
-import           Data.Bifunctor         (bimap)
+import           Data.Bifunctor         (second)
 import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
 import           Data.Function          ((&), on)
@@ -103,9 +103,9 @@ data ValidationError =
 
 validateChain :: Chain -> Validation [ValidationError] ValidatedChain
 validateChain c@(Genesis tx) =
-  bimap id (const $ ValidatedChain c) $ validateValues tx
+  second (const $ ValidatedChain c) $ validateValues tx
 validateChain c@(AddTx tx chain) =
-  bimap id (const $ ValidatedChain c) $
+  second (const $ ValidatedChain c) $
      validateBalance chain tx
   <> validateOrdering (chainToList chain) tx
   <> validateSigs tx
