@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           trial-chain
 version:        0.1.0.0
+synopsis:       Exercises in Algebra Driven Design
 description:    Please see the README on GitHub at <https://github.com/githubuser/trial-chain#readme>
+category:       Testing
 homepage:       https://github.com/raduom/trial-chain#readme
 bug-reports:    https://github.com/raduom/trial-chain/issues
 author:         Radu Ometita

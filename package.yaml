@@ -5,6 +5,8 @@ license:             BSD3
 author:              "Radu Ometita"
 maintainer:          "radu.ometita@gmail.com"
 copyright:           "2022 Radu Ometita"
+category:            "Testing"
+synopsis:            "Exercises in Algebra Driven Design"
 
 extra-source-files:
 - README.md
