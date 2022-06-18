@@ -72,5 +72,7 @@ test-suite trial-chain-test
     , base >=4.7 && <5
     , either
     , safe
+    , tasty
+    , tasty-quickcheck
     , trial-chain
   default-language: Haskell2010
