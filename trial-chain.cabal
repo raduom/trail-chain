@@ -31,6 +31,7 @@ library
   hs-source-dirs:
       src
   default-extensions:
+      NumericUnderscores
       GeneralizedNewtypeDeriving
   build-depends:
       base >=4.7 && <5
@@ -44,6 +45,7 @@ executable trial-chain-exe
   hs-source-dirs:
       app
   default-extensions:
+      NumericUnderscores
       GeneralizedNewtypeDeriving
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
@@ -56,11 +58,13 @@ test-suite trial-chain-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Generator
       Model
       Paths_trial_chain
   hs-source-dirs:
       test
   default-extensions:
+      NumericUnderscores
       GeneralizedNewtypeDeriving
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:

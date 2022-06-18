@@ -24,6 +24,7 @@ dependencies:
 - safe
 
 default-extensions:
+- NumericUnderscores
 - GeneralizedNewtypeDeriving
 
 library:

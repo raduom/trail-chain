@@ -8,6 +8,8 @@ module Model
   , Tx(..)
   , Chain(..)
   , ValidationError(..)
+  , ValidatedChain
+  , sign
   , verifySig
   , getTx
   , getNewTxs
@@ -17,11 +19,15 @@ module Model
   , allOutputRefs
   , getRefValue
   , validateChain
+  , listToChain
+  , chainToList
+  , validatedChainToList
   ) where
 
+import           Data.Bifunctor         (bimap)
 import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
-import           Data.Function          ((&))
+import           Data.Function          ((&), on)
 import           Data.List              (find, (\\))
 import           Safe                   (atMay)
 
@@ -46,11 +52,20 @@ data Tx = Tx
   , _sigs    :: [Signature]
   } deriving (Show, Eq)
 
+instance Ord Tx where
+  compare = compare `on` _txId
+
 data Chain = Genesis Tx
            | AddTx Tx Chain
            deriving (Show, Eq)
 
+newtype ValidatedChain = ValidatedChain Chain
+  deriving (Show, Eq)
+
 -- Cryptography
+sign :: Tx -> Address -> Signature
+sign _ addr = addr <> ".signed"
+
 verifySig :: Address -> Tx -> Signature -> Bool
 verifySig address _tx signature = address <> ".signed" == signature
 
@@ -64,6 +79,7 @@ data ValidationError =
   | BadValue
   | InvalidReference
   | DoubleSpent
+  | WrongTxId
   deriving (Show)
 
 getTx :: Chain -> TxId -> ChainObs (Maybe Tx)
@@ -87,18 +103,21 @@ getNewTxs chain txId =
 
 -- Semantics:
 --   What does it mean for a chain of txs to be well-formed?
-validateChain :: Chain -> Validation [ValidationError] ()
-validateChain (Genesis tx) = validateValues tx
-validateChain (AddTx tx chain) =
+validateChain :: Chain -> Validation [ValidationError] ValidatedChain
+validateChain c@(Genesis tx) =
+  bimap id (const $ ValidatedChain c) $ validateValues tx
+validateChain c@(AddTx tx chain) =
+  bimap id (const $ ValidatedChain c) $
      validateBalance chain tx
+  <> validateOrdering (chainToList chain) tx
   <> validateSigs tx
   <> validateValues tx
 
 observeValidChain :: Chain -> Validation [ValidationError] a -> ChainObs a
 observeValidChain chain v =
   case validateChain chain of
-    Success () -> v
-    Failure e  -> Failure e
+    Success (ValidatedChain _) -> v
+    Failure e                  -> Failure e
 
 validateBalance :: Chain -> Tx -> Validation [ValidationError] ()
 validateBalance chain tx =
@@ -124,6 +143,11 @@ validateValues tx =
      then Success ()
      else Failure [BadValue]
 
+validateOrdering :: [Tx] -> Tx -> Validation [ValidationError] ()
+validateOrdering (tx : txs) tx' =
+  if tx < tx' then Success()
+              else Failure [WrongTxId]
+
 -- Check for valid references and no double spending
 validateInputs :: [Tx] -> Tx -> Validation [ValidationError] [(Input, Output)]
 validateInputs chain tx =
@@ -140,6 +164,15 @@ validateInputs chain tx =
 chainToList :: Chain -> [Tx]
 chainToList (Genesis tx)     = [tx]
 chainToList (AddTx tx chain) = tx : chainToList chain
+
+validatedChainToList :: ValidatedChain -> [Tx]
+validatedChainToList (ValidatedChain chain) =
+  chainToList chain
+
+listToChain :: [Tx] -> Maybe Chain
+listToChain []         = Nothing
+listToChain (tx :  []) = Just $ Genesis tx
+listToChain (tx : txs) = AddTx tx <$> listToChain txs
 
 allInputs :: [Tx] -> [Input]
 allInputs = concatMap _inputs
