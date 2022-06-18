@@ -61,6 +61,7 @@ test-suite trial-chain-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Adapter
       Generator
       Model
       Paths_trial_chain

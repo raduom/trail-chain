@@ -1,11 +1,10 @@
 module Main where
 
 import           Data.Either.Validation  as V
-import           Test.QuickCheck.Monadic
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 
-import           Generator
+import           Generator ()
 import           Model
 
 main :: IO ()

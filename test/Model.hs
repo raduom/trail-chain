@@ -28,7 +28,7 @@ import           Data.Bifunctor         (bimap)
 import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
 import           Data.Function          ((&), on)
-import           Data.List              (find, (\\))
+import           Data.List              (find)
 import Data.Set (Set)
 import qualified Data.Set as Set
 import           Safe                   (atMay)
@@ -73,8 +73,25 @@ verifySig address _tx signature = address <> ".signed" == signature
 
 -- Semantics:
 --   How does the syntax affect the observations made on the chain?
-type ChainObs a = Validation [ValidationError] a
+getTx :: ValidatedChain -> TxId -> Maybe Tx
+getTx (ValidatedChain chain) txId =
+  case chain of
+    Genesis tx ->
+      if _txId tx == txId then Just tx else Nothing
+    AddTx tx chain' ->
+      if _txId tx == txId then Just tx else getTx (ValidatedChain chain') txId
 
+getNewTxs :: ValidatedChain -> TxId -> [Tx]
+getNewTxs (ValidatedChain chain) txId =
+  case chain of
+    Genesis tx ->
+      if _txId tx > txId then [tx] else []
+    AddTx tx chain' ->
+      if _txId tx > txId then tx :  getNewTxs (ValidatedChain chain') txId
+                         else getNewTxs (ValidatedChain chain') txId
+
+-- Semantics:
+--   What does it mean for a chain of txs to be well-formed?
 data ValidationError =
     UnbalancedTx
   | MissingSignature
@@ -84,27 +101,6 @@ data ValidationError =
   | WrongTxId
   deriving (Show)
 
-getTx :: Chain -> TxId -> ChainObs (Maybe Tx)
-getTx chain txId =
-  observeValidChain chain $
-    case chain of
-      Genesis tx ->
-        if _txId tx == txId then pure $ Just tx else pure Nothing
-      AddTx tx chain' ->
-        if _txId tx == txId then pure $ Just tx else getTx chain' txId
-
-getNewTxs :: Chain -> TxId -> ChainObs [Tx]
-getNewTxs chain txId =
-  observeValidChain chain $
-    case chain of
-      Genesis tx ->
-        if _txId tx > txId then pure [tx] else pure []
-      AddTx tx chain' ->
-        if _txId tx > txId then (tx :) <$> getNewTxs chain' txId
-                           else getNewTxs chain' txId
-
--- Semantics:
---   What does it mean for a chain of txs to be well-formed?
 validateChain :: Chain -> Validation [ValidationError] ValidatedChain
 validateChain c@(Genesis tx) =
   bimap id (const $ ValidatedChain c) $ validateValues tx
@@ -114,12 +110,6 @@ validateChain c@(AddTx tx chain) =
   <> validateOrdering (chainToList chain) tx
   <> validateSigs tx
   <> validateValues tx
-
-observeValidChain :: Chain -> Validation [ValidationError] a -> ChainObs a
-observeValidChain chain v =
-  case validateChain chain of
-    Success (ValidatedChain _) -> v
-    Failure e                  -> Failure e
 
 validateBalance :: Chain -> Tx -> Validation [ValidationError] ()
 validateBalance chain tx =
@@ -146,7 +136,8 @@ validateValues tx =
      else Failure [BadValue]
 
 validateOrdering :: [Tx] -> Tx -> Validation [ValidationError] ()
-validateOrdering (tx : txs) tx' =
+validateOrdering [] _         = Success ()
+validateOrdering (tx : _) tx' =
   if tx < tx' then Success()
               else Failure [WrongTxId]
 
