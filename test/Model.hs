@@ -2,7 +2,7 @@ module Model
   ( Address
   , Signature
   , TxId
-  , Value
+  , Value(..)
   , Input
   , Output
   , Tx(..)
@@ -88,7 +88,7 @@ getNewTxs chain txId =
 -- Semantics:
 --   What does it mean for a chain of txs to be well-formed?
 validateChain :: Chain -> Validation [ValidationError] ()
-validateChain (Genesis tx) = validateSigs tx <> validateValues tx
+validateChain (Genesis tx) = validateValues tx
 validateChain (AddTx tx chain) =
      validateBalance chain tx
   <> validateSigs tx
