@@ -29,6 +29,8 @@ import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
 import           Data.Function          ((&), on)
 import           Data.List              (find, (\\))
+import Data.Set (Set)
+import qualified Data.Set as Set
 import           Safe                   (atMay)
 
 -- Syntax
@@ -174,18 +176,19 @@ listToChain []         = Nothing
 listToChain (tx :  []) = Just $ Genesis tx
 listToChain (tx : txs) = AddTx tx <$> listToChain txs
 
-allInputs :: [Tx] -> [Input]
-allInputs = concatMap _inputs
+allInputs :: [Tx] -> Set Input
+allInputs = Set.fromList . concatMap _inputs
 
-allOutputs :: [Tx] -> [Output]
-allOutputs = concatMap _outputs
+allOutputs :: [Tx] -> Set Output
+allOutputs = Set.fromList . concatMap _outputs
 
-allUnspentOutputRefs :: [Tx] -> [OutputRef]
+allUnspentOutputRefs :: [Tx] -> Set OutputRef
 allUnspentOutputRefs chain =
-  allOutputRefs chain \\ allInputs chain
+  allOutputRefs chain Set.\\ allInputs chain
 
-allOutputRefs :: [Tx] -> [OutputRef]
+allOutputRefs :: [Tx] -> Set OutputRef
 allOutputRefs =
+  Set.fromList .
                     -- add offsets/indexes for outputs, starting with 0
   concatMap (\tx -> zip [0..] (_outputs tx)
                     -- pair the current transaction id with the output offset/index

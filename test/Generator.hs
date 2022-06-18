@@ -9,7 +9,9 @@ module Generator
 import           Control.Monad          (forM)
 import           Data.Either.Validation (Validation (..))
 import           Data.Maybe             (fromJust)
-import           Test.QuickCheck        (Arbitrary(..), Gen, chooseInt, shuffle)
+import qualified Data.Set               as Set
+import           Test.QuickCheck        (Arbitrary (..), Gen, chooseInt,
+                                         shuffle)
 
 import           Model
 
@@ -37,7 +39,7 @@ withValidatedChain txs f =
 
 genTx :: [Tx] -> Gen Tx
 genTx txs = withValidatedChain txs $ \_ -> do
-  utxos  <- shuffle $ allUnspentOutputRefs txs
+  utxos  <- shuffle $ Set.toList $ allUnspentOutputRefs txs
   inCnt  <- chooseInt (1, 8)
   let inputs     = lookupInputs txs $ take inCnt utxos
       txId       = _txId (head txs) + 1
