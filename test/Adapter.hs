@@ -3,12 +3,20 @@ module Adapter
   , pureAdapter
   ) where
 
-import Model
+import           Data.Functor.Identity (Identity, runIdentity)
+import           Test.Tasty.QuickCheck
 
-data Adapter = Adapter
-  { getTx    :: ValidatedChain -> Maybe Tx
-  , getNewTx :: ValidatedChain -> TxId -> [Tx]
+import           Model
+
+data Adapter m = Adapter
+  { getTx      :: ValidatedChain -> TxId -> m (Maybe Tx)
+  , getNewTxs  :: ValidatedChain -> TxId -> m [Tx]
+  , runMonadic :: m Property -> Property
   }
 
-pureAdapter :: Adapter
-pureAdapter = undefined
+pureAdapter :: Adapter Identity
+pureAdapter = Adapter
+  { Adapter.getTx     = \vc tid -> pure $ Model.getTx     vc tid
+  , Adapter.getNewTxs = \vc tid -> pure $ Model.getNewTxs vc tid
+  , Adapter.runMonadic = runIdentity
+  }
