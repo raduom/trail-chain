@@ -27,10 +27,10 @@ module Model
 import           Data.Bifunctor         (second)
 import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
-import           Data.Function          ((&), on)
-import           Data.List              (find)
-import Data.Set (Set)
-import qualified Data.Set as Set
+import           Data.Function          ((&))
+import           Data.List              (find, foldl')
+import           Data.Set               (Set)
+import qualified Data.Set               as Set
 import           Safe                   (atMay)
 
 -- Syntax
@@ -49,13 +49,10 @@ type Output    = (Address, Value)
 
 data Tx = Tx
   { _txId    :: TxId
-  , _inputs  :: [Input]
+  , _inputs  :: Set Input
   , _outputs :: [Output]
   , _sigs    :: [Signature]
   } deriving (Show, Eq)
-
-instance Ord Tx where
-  compare = compare `on` _txId
 
 data Chain = Genesis Tx
            | AddTx Tx Chain
@@ -107,7 +104,6 @@ validateChain c@(Genesis tx) =
 validateChain c@(AddTx tx chain) =
   second (const $ ValidatedChain c) $
      validateBalance chain tx
-  <> validateOrdering (chainToList chain) tx
   <> validateSigs tx
   <> validateValues tx
 
@@ -135,23 +131,17 @@ validateValues tx =
      then Success ()
      else Failure [BadValue]
 
-validateOrdering :: [Tx] -> Tx -> Validation [ValidationError] ()
-validateOrdering [] _         = Success ()
-validateOrdering (tx : _) tx' =
-  if tx < tx' then Success()
-              else Failure [WrongTxId]
-
 -- Check for valid references and no double spending
 validateInputs :: [Tx] -> Tx -> Validation [ValidationError] [(Input, Output)]
 validateInputs chain tx =
   eitherToValidation $ do
     -- Lookup all references, fail if any do not resolve.
     outs <- maybe (Left [InvalidReference]) Right $
-              sequence $ getRefValue chain <$> _inputs tx
+              sequence $ getRefValue chain <$> Set.toList (_inputs tx)
     -- Check for double spending.
-    if any (`elem` allInputs chain) (_inputs tx)
+    if any (`Set.member` allInputs chain) (_inputs tx)
        then Left  [DoubleSpent]
-       else Right $ zip (_inputs tx) outs
+       else Right $ zip (Set.toList $ _inputs tx) outs
 
 -- Utility functions for working with the chain
 chainToList :: Chain -> [Tx]
@@ -168,7 +158,7 @@ listToChain (tx :  []) = Just $ Genesis tx
 listToChain (tx : txs) = AddTx tx <$> listToChain txs
 
 allInputs :: [Tx] -> Set Input
-allInputs = Set.fromList . concatMap _inputs
+allInputs = foldl' Set.union Set.empty . map _inputs
 
 allOutputs :: [Tx] -> Set Output
 allOutputs = Set.fromList . concatMap _outputs

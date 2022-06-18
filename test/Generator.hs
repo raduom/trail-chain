@@ -48,7 +48,7 @@ genTx txs = withValidatedChain txs $ \_ -> do
   addrs  <- take outCnt <$> shuffle addresses
   outs   <- genOutputs totalValue addrs
   let tx = Tx { _txId    = txId
-              , _inputs  = fst <$> inputs
+              , _inputs  = Set.fromList $ fst <$> inputs
               , _outputs = outs
               , _sigs    = []
               }
@@ -76,14 +76,14 @@ genGenesis = do
       value <- chooseInt (1_000_000, 10_000_000_000)
       pure (addr, Value value)
   pure Tx { _txId = 0
-          , _inputs = []
+          , _inputs = Set.empty
           , _outputs = outs
           , _sigs = []
           }
 
 genChain :: Gen [Tx]
 genChain =
-  chooseInt (1, 1000) >>= go []
+  chooseInt (1, 500) >>= go []
   where
     go :: [Tx] -> Int -> Gen [Tx]
     go [] n = do

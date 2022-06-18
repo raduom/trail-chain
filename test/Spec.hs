@@ -30,3 +30,38 @@ prop_genChainIsValid adapter chain =
     case validateChain chain of
       V.Success _ -> assert True
       V.Failure _ -> assert False
+
+prop_badValue
+  :: Monad m
+  => Adapter m
+  -> Chain
+  -> Property
+prop_badValue = undefined
+
+prop_missingSig
+  :: Monad m
+  => Adapter m
+  -> Chain
+  -> Property
+prop_missingSig = undefined
+
+prop_unbalancedTx
+  :: Monad m
+  => Adapter m
+  -> Chain
+  -> Property
+prop_unbalancedTx = undefined
+
+prop_invalidRef
+  :: Monad m
+  => Adapter m
+  -> Chain
+  -> Property
+prop_invalidRef = undefined
+
+prop_doubleSpend
+  :: Monad m
+  => Adapter m
+  -> Chain
+  -> Property
+prop_doubleSpend = undefined
