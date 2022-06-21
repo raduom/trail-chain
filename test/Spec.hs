@@ -45,15 +45,13 @@ prop_badValue adapter chain =
   forAll (head <$> shuffle addresses) $
   \addr ->
      monadic (runMonadic adapter) $ do
-       let outs   = _outputs tx
+       let outs   = Debug.trace "outputs 01" $ _outputs tx
            tx'    = tx { _outputs = outs ++ [ (addr, Value   10)
                                             , (addr, Value (-10)) ]
                        }
        case validateTx chain tx' of
-         V.Failure [BadValue] -> assert True
-         _                    -> assert False
-         -- V.Success _          -> Debug.trace "FALSE" $ assert False
-         -- V.Failure err        -> Debug.trace "Wrong failure" $ assert False
+         V.Failure [BadValue] -> Debug.trace "bad received"  $ assert True
+         _                    -> Debug.trace "good received" $ assert False
 
 prop_missingSig
   :: Monad m

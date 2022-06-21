@@ -9,14 +9,14 @@ import           Test.Tasty.QuickCheck
 import           Model
 
 data Adapter m = Adapter
-  { getTx      :: ValidatedChain -> TxId -> m (Maybe Tx)
-  , getNewTxs  :: ValidatedChain -> TxId -> m [Tx]
-  , runMonadic :: m Property -> Property
+  { getTx         :: Chain -> TxId -> m (Maybe Tx)
+  , validateChain :: Chain -> m [ValidationError]
+  , runMonadic    :: m Property -> Property
   }
 
 pureAdapter :: Adapter Identity
 pureAdapter = Adapter
-  { Adapter.getTx     = \vc tid -> pure $ Model.getTx     vc tid
-  , Adapter.getNewTxs = \vc tid -> pure $ Model.getNewTxs vc tid
+  { Adapter.getTx     = \c tid -> pure $ Model.getTx vc tid
+  , Adapter.validate  = undefined
   , Adapter.runMonadic = runIdentity
   }
