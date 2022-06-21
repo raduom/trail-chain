@@ -6,8 +6,10 @@ import           Test.Tasty
 import           Test.Tasty.QuickCheck
 
 import           Adapter
-import           Generator               ()
+import           Generator
 import           Model
+
+import qualified Debug.Trace as Debug
 
 main :: IO ()
 main = defaultMain tests
@@ -17,7 +19,8 @@ tests = testGroup "Tests" [modelTests]
 
 modelTests :: TestTree
 modelTests = testGroup "Model tests"
-  [ testProperty "Generated chains are valid" $ prop_genChainIsValid Adapter.pureAdapter
+  [ testProperty "Can detect negative values" $ prop_badValue Adapter.pureAdapter
+  -- , testProperty "Generated chains are valid" $ prop_genChainIsValid Adapter.pureAdapter
   ]
 
 prop_genChainIsValid
@@ -34,9 +37,23 @@ prop_genChainIsValid adapter chain =
 prop_badValue
   :: Monad m
   => Adapter m
-  -> Chain
+  -> ValidatedChain
   -> Property
-prop_badValue = undefined
+prop_badValue adapter chain =
+  forAll (genTx $ validatedChainToList chain) $
+  \tx   ->
+  forAll (head <$> shuffle addresses) $
+  \addr ->
+     monadic (runMonadic adapter) $ do
+       let outs   = _outputs tx
+           tx'    = tx { _outputs = outs ++ [ (addr, Value   10)
+                                            , (addr, Value (-10)) ]
+                       }
+       case validateTx chain tx' of
+         V.Failure [BadValue] -> assert True
+         _                    -> assert False
+         -- V.Success _          -> Debug.trace "FALSE" $ assert False
+         -- V.Failure err        -> Debug.trace "Wrong failure" $ assert False
 
 prop_missingSig
   :: Monad m

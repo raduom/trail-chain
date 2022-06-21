@@ -22,6 +22,7 @@ module Model
   , listToChain
   , chainToList
   , validatedChainToList
+  , validateTx
   ) where
 
 import           Data.Bifunctor         (second)
@@ -104,8 +105,8 @@ validateChain c@(Genesis tx) =
 validateChain c@(AddTx tx chain) =
   second (const $ ValidatedChain c) $
      validateBalance chain tx
-  <> validateSigs tx
-  <> validateValues tx
+  *> validateSigs chain tx
+  *> validateValues tx
 
 validateBalance :: Chain -> Tx -> Validation [ValidationError] ()
 validateBalance chain tx =
@@ -118,11 +119,16 @@ validateBalance chain tx =
        else Left [UnbalancedTx]
 
 -- All outputs must have corresponding signatures.
-validateSigs :: Tx -> Validation [ValidationError] ()
-validateSigs tx =
-  if all (\(addr, _) -> any (verifySig addr tx) (_sigs tx)) $ _outputs tx
-     then Success ()
-     else Failure [MissingSignature]
+validateSigs :: Chain -> Tx -> Validation [ValidationError] ()
+validateSigs chain tx =
+  eitherToValidation $ do
+    ins <- validationToEither $ validateInputs (chainToList chain) tx
+    if all hasSignature $ snd <$> ins
+       then Right ()
+       else Left  [MissingSignature]
+  where
+    hasSignature :: Output -> Bool
+    hasSignature (addr, _) = any (verifySig addr tx) (_sigs tx)
 
 -- All outputs must be greater than 0.
 validateValues :: Tx -> Validation [ValidationError] ()
@@ -151,6 +157,10 @@ chainToList (AddTx tx chain) = tx : chainToList chain
 validatedChainToList :: ValidatedChain -> [Tx]
 validatedChainToList (ValidatedChain chain) =
   chainToList chain
+
+validateTx :: ValidatedChain -> Tx -> Validation [ValidationError] ValidatedChain
+validateTx (ValidatedChain chain) tx =
+  validateChain (AddTx tx chain)
 
 listToChain :: [Tx] -> Maybe Chain
 listToChain []         = Nothing
