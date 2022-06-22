@@ -52,7 +52,7 @@ prop_canFindTx
   -> Property
 prop_canFindTx adapter chain =
   let chain' = chainToList chain
-  in  forAll (chooseInt (1, length chain')) $
+  in  forAll (chooseInt (0, length chain' - 1)) $
   \txId ->
     monadic (runMonadic adapter) $ do
       tx <- run $ Adapter.getTx adapter chain txId
