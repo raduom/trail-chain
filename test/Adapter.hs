@@ -3,10 +3,12 @@ module Adapter
   , pureAdapter
   ) where
 
-import           Data.Functor.Identity (Identity, runIdentity)
+import qualified Data.Either.Validation as V
+import           Data.Functor.Identity  (Identity, runIdentity)
 import           Test.Tasty.QuickCheck
 
-import           Model
+import           Model                  (Chain, Tx, TxId, ValidationError (..))
+import qualified Model
 
 {- | Thoughts on testing strategy:
      A. We need to test that the basic behaviour works (for a validated tx, once added
@@ -29,7 +31,16 @@ data Adapter m = Adapter
 
 pureAdapter :: Adapter Identity
 pureAdapter = Adapter
-  { Adapter.getTx          = \c tid -> pure $ Model.getTx c tid
-  , Adapter.validateChain  = undefined
+  { Adapter.getTx          = modelGetTx
+  , Adapter.validateChain  = modelValidateChain
   , Adapter.runMonadic     = runIdentity
   }
+
+modelValidateChain :: Monad m => Chain -> m [ValidationError]
+modelValidateChain chain =
+  case Model.validateChain chain of
+    V.Success ()   -> pure []
+    V.Failure errs -> pure errs
+
+modelGetTx :: Monad m => Chain -> TxId -> m (Maybe Tx)
+modelGetTx chain txId = pure $ Model.getTx chain txId

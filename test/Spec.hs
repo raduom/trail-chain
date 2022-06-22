@@ -13,8 +13,6 @@ import           Model                   (Chain (..), Tx (..),
                                           chainToList)
 import qualified Model
 
-import qualified Debug.Trace             as Debug
-
 main :: IO ()
 main = defaultMain tests
 
@@ -24,7 +22,7 @@ tests = testGroup "Tests" [modelTests]
 modelTests :: TestTree
 modelTests = testGroup "Model tests"
   [ testProperty "Can detect negative values" $ prop_badValue Adapter.pureAdapter
-  -- , testProperty "Generated chains are valid" $ prop_genChainIsValid Adapter.pureAdapter
+  , testProperty "Generated chains are valid" $ prop_genChainIsValid Adapter.pureAdapter
   ]
 
 prop_genChainIsValid
@@ -49,15 +47,14 @@ prop_badValue adapter chain =
   forAll (head <$> shuffle addresses) $
   \addr ->
      monadic (runMonadic adapter) $ do
-       let outs   = Debug.trace "outputs 01" $ _outputs tx
+       let outs   = _outputs tx
            tx'    = tx { _outputs = outs ++ [ (addr, Value   10)
                                             , (addr, Value (-10)) ]
                        }
        result <- run $ Adapter.validateChain adapter (AddTx tx' chain)
        case result of
-         [BadValue] -> Debug.trace "correct error received" $ assert True
-         []         -> Debug.trace "no errors"              $ assert False
-         _          -> Debug.trace "other errors received"  $ assert False
+         [BadValue] -> assert True
+         _          -> assert False
 
 prop_missingSig
   :: Monad m
