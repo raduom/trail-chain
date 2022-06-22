@@ -23,7 +23,6 @@ module Model
   , validateTx
   ) where
 
-import           Data.Bifunctor         (second)
 import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
 import           Data.Function          ((&))
@@ -50,7 +49,7 @@ data Tx = Tx
   { _txId    :: TxId
   , _inputs  :: Set Input
   , _outputs :: [Output]
-  , _sigs    :: [Signature]
+  , _sigs    :: Set Signature
   } deriving (Show, Eq)
 
 data Chain = Genesis Tx
@@ -89,9 +88,9 @@ data ValidationError =
   deriving (Show)
 
 validateChain :: Chain -> Validation [ValidationError] ()
-validateChain c@(Genesis tx) =
+validateChain (Genesis tx) =
   validateValues tx
-validateChain c@(AddTx tx chain) =
+validateChain (AddTx tx chain) =
      validateBalance chain tx
   *> validateSigs chain tx
   *> validateValues tx

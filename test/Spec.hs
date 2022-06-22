@@ -1,6 +1,7 @@
 module Main where
 
 import           Data.Either.Validation  as V
+import qualified Data.Set as Set
 import           Test.QuickCheck.Monadic
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
@@ -13,6 +14,8 @@ import           Model                   (Chain (..), Tx (..),
                                           chainToList)
 import qualified Model
 
+import qualified Debug.Trace as Debug
+
 main :: IO ()
 main = defaultMain tests
 
@@ -21,8 +24,9 @@ tests = testGroup "Tests" [modelTests]
 
 modelTests :: TestTree
 modelTests = testGroup "Model tests"
-  [ testProperty "Can detect negative values" $ prop_badValue Adapter.pureAdapter
-  , testProperty "Generated chains are valid" $ prop_genChainIsValid Adapter.pureAdapter
+  [ testProperty "Can detect a missing signature" $ prop_missingSig Adapter.pureAdapter
+  -- , testProperty "Can detect negative values"     $ prop_badValue Adapter.pureAdapter
+  -- , testProperty "Generated chains are valid"     $ prop_genChainIsValid Adapter.pureAdapter
   ]
 
 prop_genChainIsValid
@@ -61,7 +65,15 @@ prop_missingSig
   => Adapter m
   -> Chain
   -> Property
-prop_missingSig = undefined
+prop_missingSig adapter chain =
+  forAll (genTx $ chainToList chain) $
+  \tx ->
+    monadic (runMonadic adapter) $ do
+      let tx' = tx { _sigs = Set.drop 1 $ _sigs tx }
+      result <- run $ Adapter.validateChain adapter (AddTx tx' chain)
+      case result of
+        [MissingSignature] -> assert True
+        e                  -> Debug.trace ("Failed with: " <> show e) $ assert False
 
 prop_unbalancedTx
   :: Monad m

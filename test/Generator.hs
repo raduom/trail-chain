@@ -50,9 +50,9 @@ genTx txs = withValidatedChain txs $ \_ -> do
   let tx = Tx { _txId    = txId
               , _inputs  = Set.fromList $ fst <$> inputs
               , _outputs = outs
-              , _sigs    = []
+              , _sigs    = Set.empty
               }
-  pure $ tx { _sigs = sign tx <$> map (fst . snd) inputs }
+  pure $ tx { _sigs = Set.fromList $ sign tx <$> map (fst . snd) inputs }
   where
     lookupInputs :: [Tx] -> [Input] -> [(Input, Output)]
     lookupInputs c ins =
@@ -78,7 +78,7 @@ genGenesis = do
   pure Tx { _txId = 0
           , _inputs = Set.empty
           , _outputs = outs
-          , _sigs = []
+          , _sigs = Set.empty
           }
 
 genChain :: Gen [Tx]
