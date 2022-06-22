@@ -85,7 +85,7 @@ data ValidationError =
   | InvalidReference
   | DoubleSpent
   | WrongTxId
-  deriving (Show)
+  deriving (Show, Eq)
 
 validateChain :: Chain -> Validation [ValidationError] ()
 validateChain (Genesis tx) =
