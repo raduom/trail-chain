@@ -5,11 +5,15 @@ import           Test.QuickCheck.Monadic
 import           Test.Tasty
 import           Test.Tasty.QuickCheck
 
-import           Adapter
+import           Adapter                 (Adapter (..))
+import qualified Adapter
 import           Generator
-import           Model
+import           Model                   (Chain (..), Tx (..),
+                                          ValidationError (..), Value (..),
+                                          chainToList)
+import qualified Model
 
-import qualified Debug.Trace as Debug
+import qualified Debug.Trace             as Debug
 
 main :: IO ()
 main = defaultMain tests
@@ -30,17 +34,17 @@ prop_genChainIsValid
   -> Property
 prop_genChainIsValid adapter chain =
   monadic (runMonadic adapter) $ do
-    case validateChain chain of
+    case Model.validateChain chain of
       V.Success _ -> assert True
       V.Failure _ -> assert False
 
 prop_badValue
   :: Monad m
   => Adapter m
-  -> ValidatedChain
+  -> Chain
   -> Property
 prop_badValue adapter chain =
-  forAll (genTx $ validatedChainToList chain) $
+  forAll (genTx $ chainToList chain) $
   \tx   ->
   forAll (head <$> shuffle addresses) $
   \addr ->
@@ -49,9 +53,11 @@ prop_badValue adapter chain =
            tx'    = tx { _outputs = outs ++ [ (addr, Value   10)
                                             , (addr, Value (-10)) ]
                        }
-       case validateTx chain tx' of
-         V.Failure [BadValue] -> Debug.trace "bad received"  $ assert True
-         _                    -> Debug.trace "good received" $ assert False
+       result <- run $ Adapter.validateChain adapter (AddTx tx' chain)
+       case result of
+         [BadValue] -> Debug.trace "correct error received" $ assert True
+         []         -> Debug.trace "no errors"              $ assert False
+         _          -> Debug.trace "other errors received"  $ assert False
 
 prop_missingSig
   :: Monad m

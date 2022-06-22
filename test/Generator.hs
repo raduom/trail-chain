@@ -28,21 +28,12 @@ addresses =
 instance Arbitrary Chain where
   arbitrary = fromJust . listToChain <$> genChain
 
-instance Arbitrary ValidatedChain where
-  arbitrary = do
-    -- If I would like to be able to generate invalid chains, then I would
-    -- keep cycling this until I end up on a valid chain.
-    chain <- arbitrary
-    case validateChain chain of
-      Success ch -> pure ch
-      Failure _  -> error "Generated chain is invalid."
-
 -- Assertion on the validity of the chain.
-withValidatedChain :: [Tx] -> (ValidatedChain -> a) -> a
+withValidatedChain :: [Tx] -> (Chain -> a) -> a
 withValidatedChain txs f =
   let c = fromJust $ listToChain txs
   in  case validateChain c of
-        Success vc -> f vc
+        Success () -> f c
         -- It is fine to use impure exceptions in test code
         Failure e  -> error $ "Invalid chain: " <> show e
 

@@ -8,6 +8,19 @@ import           Test.Tasty.QuickCheck
 
 import           Model
 
+{- | Thoughts on testing strategy:
+     A. We need to test that the basic behaviour works (for a validated tx, once added
+        to the chain is always retreivable).
+          - conscious decision not to test what happens if I insert the same tx twice,
+            which is an impossible scenario in real life.
+     B. Ledger rules:
+        This is tested using carefully crafted txs, so the advantage of property based
+        testing in this case is minimised (might as well use unit tests).
+          - validation of the ledger rules requires us to be able to observe validation
+            errors over possibly badly formed chains.
+     C. A sanity rule that states that all generated model chains are valid.
+-}
+
 data Adapter m = Adapter
   { getTx         :: Chain -> TxId -> m (Maybe Tx)
   , validateChain :: Chain -> m [ValidationError]
@@ -16,7 +29,7 @@ data Adapter m = Adapter
 
 pureAdapter :: Adapter Identity
 pureAdapter = Adapter
-  { Adapter.getTx     = \c tid -> pure $ Model.getTx vc tid
-  , Adapter.validate  = undefined
-  , Adapter.runMonadic = runIdentity
+  { Adapter.getTx          = \c tid -> pure $ Model.getTx c tid
+  , Adapter.validateChain  = undefined
+  , Adapter.runMonadic     = runIdentity
   }

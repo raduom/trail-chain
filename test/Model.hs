@@ -8,7 +8,6 @@ module Model
   , Tx(..)
   , Chain(..)
   , ValidationError(..)
-  , ValidatedChain
   , sign
   , verifySig
   , getTx
@@ -21,7 +20,6 @@ module Model
   , validateChain
   , listToChain
   , chainToList
-  , validatedChainToList
   , validateTx
   ) where
 
@@ -59,9 +57,6 @@ data Chain = Genesis Tx
            | AddTx Tx Chain
            deriving (Show, Eq)
 
-newtype ValidatedChain = ValidatedChain Chain
-  deriving (Show, Eq)
-
 -- Cryptography
 sign :: Tx -> Address -> Signature
 sign _ addr = addr <> ".signed"
@@ -71,22 +66,16 @@ verifySig address _tx signature = address <> ".signed" == signature
 
 -- Semantics:
 --   How does the syntax affect the observations made on the chain?
-getTx :: ValidatedChain -> TxId -> Maybe Tx
-getTx (ValidatedChain chain) txId =
-  case chain of
-    Genesis tx ->
-      if _txId tx == txId then Just tx else Nothing
-    AddTx tx chain' ->
-      if _txId tx == txId then Just tx else getTx (ValidatedChain chain') txId
+getTx :: Chain -> TxId -> Maybe Tx
+getTx (Genesis tx)     txId = if _txId tx == txId then Just tx else Nothing
+getTx (AddTx tx chain) txId =
+  if _txId tx == txId then Just tx else getTx chain txId
 
-getNewTxs :: ValidatedChain -> TxId -> [Tx]
-getNewTxs (ValidatedChain chain) txId =
-  case chain of
-    Genesis tx ->
-      if _txId tx > txId then [tx] else []
-    AddTx tx chain' ->
-      if _txId tx > txId then tx :  getNewTxs (ValidatedChain chain') txId
-                         else getNewTxs (ValidatedChain chain') txId
+getNewTxs :: Chain -> TxId -> [Tx]
+getNewTxs (Genesis tx)     txId = if _txId tx > txId then [tx] else []
+getNewTxs (AddTx tx chain) txId =
+  if _txId tx > txId then tx :  getNewTxs chain txId
+                     else getNewTxs chain txId
 
 -- Semantics:
 --   What does it mean for a chain of txs to be well-formed?
@@ -99,11 +88,10 @@ data ValidationError =
   | WrongTxId
   deriving (Show)
 
-validateChain :: Chain -> Validation [ValidationError] ValidatedChain
+validateChain :: Chain -> Validation [ValidationError] ()
 validateChain c@(Genesis tx) =
-  second (const $ ValidatedChain c) $ validateValues tx
+  validateValues tx
 validateChain c@(AddTx tx chain) =
-  second (const $ ValidatedChain c) $
      validateBalance chain tx
   *> validateSigs chain tx
   *> validateValues tx
@@ -154,12 +142,8 @@ chainToList :: Chain -> [Tx]
 chainToList (Genesis tx)     = [tx]
 chainToList (AddTx tx chain) = tx : chainToList chain
 
-validatedChainToList :: ValidatedChain -> [Tx]
-validatedChainToList (ValidatedChain chain) =
-  chainToList chain
-
-validateTx :: ValidatedChain -> Tx -> Validation [ValidationError] ValidatedChain
-validateTx (ValidatedChain chain) tx =
+validateTx :: Chain -> Tx -> Validation [ValidationError] ()
+validateTx chain tx =
   validateChain (AddTx tx chain)
 
 listToChain :: [Tx] -> Maybe Chain
