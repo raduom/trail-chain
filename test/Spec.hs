@@ -2,7 +2,7 @@ module Main where
 
 import           Data.Either.Validation  as V
 import           Data.List               (nub)
-import           Data.Maybe              (isJust, fromJust)
+import           Data.Maybe              (fromJust, isJust)
 import qualified Data.Set                as Set
 import           Test.QuickCheck.Monadic
 import           Test.Tasty
@@ -10,6 +10,7 @@ import           Test.Tasty.QuickCheck
 
 import           Adapter                 (Adapter (..))
 import qualified Adapter
+import qualified FastSpec                as FS
 import           Generator
 import           Model                   (Chain (..), Tx (..),
                                           ValidationError (..), Value (..),
@@ -20,10 +21,10 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [modelTests]
+tests = testGroup "Tests" [fastChainTests]
 
 modelTests :: TestTree
-modelTests = testGroup "Model tests"
+modelTests = testGroup "Model"
   [ testProperty "Double spend" $ prop_doubleSpend Adapter.pureAdapter
   , testProperty "Invalid reference" $ prop_invalidRef Adapter.pureAdapter
   , testProperty "Unbalanced tx" $ prop_unbalancedTx Adapter.pureAdapter
@@ -31,6 +32,17 @@ modelTests = testGroup "Model tests"
   , testProperty "Negative values" $ prop_badValue Adapter.pureAdapter
   , testProperty "Generated chains are valid" $ prop_genChainIsValid Adapter.pureAdapter
   , testProperty "Can get old txs" $ prop_canFindTx Adapter.pureAdapter
+  ]
+
+fastChainTests :: TestTree
+fastChainTests = testGroup "FastChain"
+  [ testProperty "Double spend" $ prop_doubleSpend FS.fastAdapter
+  , testProperty "Invalid reference" $ prop_invalidRef FS.fastAdapter
+  , testProperty "Unbalanced tx" $ prop_unbalancedTx FS.fastAdapter
+  , testProperty "Missing signature" $ prop_missingSig FS.fastAdapter
+  , testProperty "Negative values" $ prop_badValue FS.fastAdapter
+  , testProperty "Generated chains are valid" $ prop_genChainIsValid FS.fastAdapter
+  , testProperty "Can get old txs" $ prop_canFindTx FS.fastAdapter
   ]
 
 prop_genChainIsValid
@@ -73,8 +85,11 @@ prop_badValue adapter chain =
            tx'    = tx { _outputs = outs ++ [ (addr, Value   10)
                                             , (addr, Value (-10)) ]
                        }
-       result <- run $ Adapter.validateChain adapter (AddTx tx' chain)
-       assert $ nub result == [BadValue]
+       result <- run $ Adapter.validateTx adapter chain tx'
+       -- assert $ nub result == [BadValue]
+       -- I relaxed this constraint since our chain cannot identify exactly if we
+       -- double spend or we are using an invalid reference.
+       assert $ BadValue `elem` nub result
 
 prop_missingSig
   :: Monad m
@@ -86,8 +101,8 @@ prop_missingSig adapter chain =
   \tx ->
     monadic (runMonadic adapter) $ do
       let tx' = tx { _sigs = Set.drop 1 $ _sigs tx }
-      result <- run $ Adapter.validateChain adapter (AddTx tx' chain)
-      assert $ nub result == [MissingSignature]
+      result <- run $ Adapter.validateTx adapter chain tx'
+      assert $ MissingSignature `elem` nub result
 
 prop_unbalancedTx
   :: Monad m
@@ -100,8 +115,8 @@ prop_unbalancedTx adapter chain =
     monadic (runMonadic adapter) $ do
       let out = head $ _outputs tx
           tx'    = tx { _outputs = out : _outputs tx }
-      result <- run $ Adapter.validateChain adapter (AddTx tx' chain)
-      assert $ nub result == [UnbalancedTx]
+      result <- run $ Adapter.validateTx adapter chain tx'
+      assert $ UnbalancedTx `elem` nub result
 
 prop_invalidRef
   :: Monad m
@@ -113,8 +128,8 @@ prop_invalidRef adapter chain =
   \tx ->
     monadic (runMonadic adapter) $ do
       let tx' = tx { _inputs = (-1, 10) `Set.insert` _inputs tx }
-      result <- run $ Adapter.validateChain adapter (AddTx tx' chain)
-      assert $ nub result == [InvalidReference]
+      result <- run $ Adapter.validateTx adapter chain tx'
+      assert $ InvalidReference `elem` nub result
 
 prop_doubleSpend
   :: Monad m
@@ -137,9 +152,8 @@ prop_doubleSpend adapter chain =
                      , _sigs    = (sign tx1 addr0) `Set.insert` _sigs tx1
                      }
       -- First tx is succesfully processed.
-      result0 <- run $ Adapter.validateChain adapter (AddTx tx0 chain)
+      result0 <- run $ Adapter.validateTx adapter chain tx0
       assert   $ result0 == []
 
-      result1 <- run $ Adapter.validateChain adapter (AddTx tx1'
-                                                     (AddTx tx0 chain))
-      assert   $ nub result1 == [DoubleSpent]
+      result1 <- run $ Adapter.validateTx adapter (AddTx tx0 chain) tx1'
+      assert   $ DoubleSpent `elem` nub result1

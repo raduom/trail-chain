@@ -18,9 +18,9 @@ module Model
   , allOutputRefs
   , getRefValue
   , validateChain
+  , validateTx
   , listToChain
   , chainToList
-  , validateTx
   ) where
 
 import           Data.Either.Validation (Validation (..), eitherToValidation,
@@ -47,7 +47,8 @@ type Output    = (Address, Value)
 
 data Tx = Tx
   { _txId    :: TxId
-  , _inputs  :: Set Input
+  , _inputs  :: Set Input -- ^ The Set ensures we don't try to double spent a resource
+                          --   within the same transaction.
   , _outputs :: [Output]
   , _sigs    :: Set Signature
   } deriving (Show, Eq)
@@ -91,6 +92,10 @@ validateChain :: Chain -> Validation [ValidationError] ()
 validateChain (Genesis tx) =
   validateValues tx
 validateChain (AddTx tx chain) =
+  validateTx chain tx
+
+validateTx :: Chain -> Tx -> Validation [ValidationError] ()
+validateTx chain tx =
      validateBalance chain tx
   *> validateSigs chain tx
   *> validateValues tx
@@ -140,10 +145,6 @@ validateInputs chain tx =
 chainToList :: Chain -> [Tx]
 chainToList (Genesis tx)     = [tx]
 chainToList (AddTx tx chain) = tx : chainToList chain
-
-validateTx :: Chain -> Tx -> Validation [ValidationError] ()
-validateTx chain tx =
-  validateChain (AddTx tx chain)
 
 listToChain :: [Tx] -> Maybe Chain
 listToChain []         = Nothing
