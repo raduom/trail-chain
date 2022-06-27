@@ -47,7 +47,7 @@ type Output    = (Address, Value)
 
 data Tx = Tx
   { _txId    :: TxId
-  , _inputs  :: Set Input -- ^ The Set ensures we don't try to double spent a resource
+  , _inputs  :: Set Input -- ^ The Set ensures I can't double spent a resource
                           --   within the same transaction.
   , _outputs :: [Output]
   , _sigs    :: Set Signature

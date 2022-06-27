@@ -15,6 +15,8 @@ fastAdapter :: Adapter Identity
 fastAdapter = Adapter
   { Adapter.getTx      = fastGetTx
   , Adapter.validateTx = fastValidateTx
+  -- Note: If the blockchain runs in IO, I have a `monadicIO` function in
+  --       quickcheck monadic that I can use here.
   , Adapter.runMonadic = runIdentity
   }
 

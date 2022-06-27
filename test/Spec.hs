@@ -21,7 +21,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [fastChainTests]
+tests = testGroup "Tests" [modelTests, fastChainTests]
 
 modelTests :: TestTree
 modelTests = testGroup "Model"
@@ -56,7 +56,7 @@ prop_genChainIsValid adapter chain =
       V.Success _ -> assert True
       V.Failure _ -> assert False
 
--- Ideally, we should also test for equality here.
+-- Ideally, I should also test for equality here.
 prop_canFindTx
   :: Monad m
   => Adapter m
@@ -87,8 +87,8 @@ prop_badValue adapter chain =
                        }
        result <- run $ Adapter.validateTx adapter chain tx'
        -- assert $ nub result == [BadValue]
-       -- I relaxed this constraint since our chain cannot identify exactly if we
-       -- double spend or we are using an invalid reference.
+       -- I relaxed this constraint since our chain cannot identify exactly if there
+       -- is a double spend or an invalid reference.
        assert $ BadValue `elem` nub result
 
 prop_missingSig

@@ -82,7 +82,7 @@ addTx chain tx =
   eitherToValidation $ do
     validationToEither $ validateTx chain tx
     let utxo'  = foldl' removeUtxo   (_utxo chain) (_inputs tx)
-        utxo'' = foldl' (addUtxo tx) (_utxo chain) (zip [0..] $ _outputs tx)
+        utxo'' = foldl' (addUtxo tx) utxo'         (zip [0..] $ _outputs tx)
         txs'   = Map.insert (_txId tx) tx (_txs chain)
     pure $ Chain { _blocks = tx <| (_blocks chain)
                  , _utxo   = utxo''

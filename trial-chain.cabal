@@ -29,7 +29,6 @@ source-repository head
 library
   exposed-modules:
       FastChain
-      Lib
   other-modules:
       Paths_trial_chain
   hs-source-dirs:
