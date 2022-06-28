@@ -14,19 +14,21 @@ module FastChain
   , getTx
   , getTxs
   , validateTx
+  , sign
+  , verifySig
   ) where
 
+import           Data.Aeson             (FromJSON, ToJSON)
 import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
 import           Data.Foldable          (foldl')
 import           Data.Functor           (($>))
-import Data.Aeson (FromJSON, ToJSON)
 import           Data.List.NonEmpty     (NonEmpty ((:|)), toList, (<|))
 import           Data.Map               (Map)
 import qualified Data.Map               as Map
-import GHC.Generics (Generic)
 import           Data.Set               (Set)
 import qualified Data.Set               as Set
+import           GHC.Generics           (Generic)
 
 -- This is cut & pasted from the mode. Generally you would have a very different
 -- API for the real implementation, but for the purposes of this exercise this
@@ -117,7 +119,8 @@ data ValidationError =
   | InvalidReference
   | DoubleSpent
   | WrongTxId
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+  deriving anyclass (ToJSON, FromJSON)
 
 validateTx :: Chain -> Tx -> Validation [ValidationError] ()
 validateTx chain tx =

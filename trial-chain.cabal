@@ -29,6 +29,9 @@ source-repository head
 library
   exposed-modules:
       FastChain
+      Web.API
+      Web.Client
+      Web.Server
   other-modules:
       Paths_trial_chain
   hs-source-dirs:
@@ -40,12 +43,19 @@ library
       DeriveAnyClass
       NumericUnderscores
       GeneralizedNewtypeDeriving
+      DataKinds
+      TypeOperators
   build-depends:
       aeson
     , base >=4.7 && <5
     , containers
     , either
     , safe
+    , servant
+    , servant-client
+    , servant-server
+    , stm
+    , warp
   default-language: Haskell2010
 
 executable trial-chain-exe
@@ -61,6 +71,8 @@ executable trial-chain-exe
       DeriveAnyClass
       NumericUnderscores
       GeneralizedNewtypeDeriving
+      DataKinds
+      TypeOperators
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
       aeson
@@ -68,7 +80,12 @@ executable trial-chain-exe
     , containers
     , either
     , safe
+    , servant
+    , servant-client
+    , servant-server
+    , stm
     , trial-chain
+    , warp
   default-language: Haskell2010
 
 test-suite trial-chain-test
@@ -89,6 +106,8 @@ test-suite trial-chain-test
       DeriveAnyClass
       NumericUnderscores
       GeneralizedNewtypeDeriving
+      DataKinds
+      TypeOperators
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
       QuickCheck
@@ -97,7 +116,12 @@ test-suite trial-chain-test
     , containers
     , either
     , safe
+    , servant
+    , servant-client
+    , servant-server
+    , stm
     , tasty
     , tasty-quickcheck
     , trial-chain
+    , warp
   default-language: Haskell2010

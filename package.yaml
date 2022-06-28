@@ -27,6 +27,11 @@ dependencies:
 - containers
 - either
 - safe
+- servant
+- servant-client
+- servant-server
+- stm
+- warp
 
 default-extensions:
 - StandaloneDeriving
@@ -35,6 +40,8 @@ default-extensions:
 - DeriveAnyClass
 - NumericUnderscores
 - GeneralizedNewtypeDeriving
+- DataKinds
+- TypeOperators
 
 library:
   source-dirs: src
