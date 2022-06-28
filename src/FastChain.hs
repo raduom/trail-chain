@@ -20,9 +20,11 @@ import           Data.Either.Validation (Validation (..), eitherToValidation,
                                          validationToEither)
 import           Data.Foldable          (foldl')
 import           Data.Functor           (($>))
+import Data.Aeson (FromJSON, ToJSON)
 import           Data.List.NonEmpty     (NonEmpty ((:|)), toList, (<|))
 import           Data.Map               (Map)
 import qualified Data.Map               as Map
+import GHC.Generics (Generic)
 import           Data.Set               (Set)
 import qualified Data.Set               as Set
 
@@ -34,7 +36,9 @@ type Address   = String
 type Signature = String
 type TxId      = Int
 newtype Value  = Value Int
-  deriving (Eq, Ord, Show, Num)
+  deriving (Eq, Ord, Show, Generic)
+  deriving newtype Num
+  deriving anyclass (FromJSON, ToJSON)
 
 instance Semigroup Value where
   Value a <> Value b = Value $ a + b
@@ -48,7 +52,8 @@ data Tx = Tx
   , _inputs  :: Set Input
   , _outputs :: [Output]
   , _sigs    :: Set Signature
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Generic)
+    deriving anyclass (FromJSON, ToJSON)
 
 data Chain = Chain
   { _blocks :: NonEmpty Tx

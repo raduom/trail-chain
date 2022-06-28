@@ -36,7 +36,8 @@ type Address   = String
 type Signature = String
 type TxId      = Int
 newtype Value  = Value Int
-  deriving (Eq, Ord, Show, Num)
+  deriving (Eq, Ord, Show)
+  deriving newtype Num
 
 instance Semigroup Value where
   Value a <> Value b = Value $ a + b

@@ -41,7 +41,6 @@ fastChainTests = testGroup "FastChain"
   , testProperty "Unbalanced tx" $ prop_unbalancedTx FS.fastAdapter
   , testProperty "Missing signature" $ prop_missingSig FS.fastAdapter
   , testProperty "Negative values" $ prop_badValue FS.fastAdapter
-  , testProperty "Generated chains are valid" $ prop_genChainIsValid FS.fastAdapter
   , testProperty "Can get old txs" $ prop_canFindTx FS.fastAdapter
   ]
 

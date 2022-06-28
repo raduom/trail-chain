@@ -34,10 +34,15 @@ library
   hs-source-dirs:
       src
   default-extensions:
+      StandaloneDeriving
+      DerivingStrategies
+      DeriveGeneric
+      DeriveAnyClass
       NumericUnderscores
       GeneralizedNewtypeDeriving
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , containers
     , either
     , safe
@@ -50,11 +55,16 @@ executable trial-chain-exe
   hs-source-dirs:
       app
   default-extensions:
+      StandaloneDeriving
+      DerivingStrategies
+      DeriveGeneric
+      DeriveAnyClass
       NumericUnderscores
       GeneralizedNewtypeDeriving
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , containers
     , either
     , safe
@@ -73,11 +83,16 @@ test-suite trial-chain-test
   hs-source-dirs:
       test
   default-extensions:
+      StandaloneDeriving
+      DerivingStrategies
+      DeriveGeneric
+      DeriveAnyClass
       NumericUnderscores
       GeneralizedNewtypeDeriving
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
       QuickCheck
+    , aeson
     , base >=4.7 && <5
     , containers
     , either
