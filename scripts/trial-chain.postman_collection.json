@@ -1,0 +1,77 @@
+{
+	"info": {
+		"_postman_id": "ed33ea59-e4f2-4b12-a094-3e979df5446a",
+		"name": "trial-chain",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "tx",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/tx/0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"tx",
+						"0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "tx-from",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/tx-from/0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"tx-from",
+						"0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "tx-push",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n        \"_inputs\": [[0, 1]],\n        \"_outputs\": [\n            [\n                \"inch\",\n                1000000000\n            ]\n        ],\n        \"_sigs\": [\n            \"half.signed\"\n        ],\n        \"_txId\": 0\n    }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/tx-push",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"tx-push"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

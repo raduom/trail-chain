@@ -104,7 +104,7 @@ getTx chain txId = Map.lookup txId $ _txs chain
 
 getTxs :: Chain -> TxId -> [Tx]
 getTxs (Chain txs _ _) txId =
-  dropWhile (\tx -> _txId tx /= txId) $ toList txs
+  filter (\tx -> _txId tx >= txId) $ toList txs
 
 -- Validation
 
